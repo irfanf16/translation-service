@@ -1,0 +1,150 @@
+openapi: 3.0.3
+info:
+  title: Translation Management Service API
+  description: API-driven Translation Management Service built with Laravel.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8000/api
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Translation:
+      type: object
+      properties:
+        id:
+          type: integer
+        key:
+          type: string
+        content:
+          type: string
+        locale_id:
+          type: integer
+        tags:
+          type: array
+          items:
+            type: string
+
+paths:
+  /translations:
+    post:
+      summary: Create a translation
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - key
+                - content
+                - locale_id
+              properties:
+                key:
+                  type: string
+                content:
+                  type: string
+                locale_id:
+                  type: integer
+                tags:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        201:
+          description: Translation created successfully
+
+  /translations/{id}:
+    get:
+      summary: Get a translation by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Translation details
+
+    put:
+      summary: Update a translation
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                key:
+                  type: string
+                content:
+                  type: string
+                tags:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        200:
+          description: Translation updated
+
+  /translations/search:
+    get:
+      summary: Search translations
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: key
+          in: query
+          schema:
+            type: string
+        - name: locale
+          in: query
+          schema:
+            type: string
+        - name: tag
+          in: query
+          schema:
+            type: string
+        - name: content
+          in: query
+          schema:
+            type: string
+      responses:
+        200:
+          description: Search results
+
+  /translations/export/{locale}:
+    get:
+      summary: Export translations as JSON
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: locale
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: JSON export for frontend applications
