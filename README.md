@@ -1,114 +1,64 @@
 # Translation Management Service
 
-## Overview
-This project is an API-driven Translation Management Service built using Laravel.
-It is designed to demonstrate clean architecture, scalability, performance
-optimization, and security best practices.
+**Laravel 12 REST API microservice** for managing application translation strings. Stores key/value translation pairs per locale with tag-based categorization, full-text search, and exports as flat JSON objects. Redis-cached export endpoint tested to respond under 500ms.
 
-The service allows managing translations across multiple locales, tagging them
-for context, and exporting them efficiently for frontend applications.
-
----
+![PHP](https://img.shields.io/badge/PHP-8.2%2B-777BB4?style=flat&logo=php)
+![Laravel](https://img.shields.io/badge/Laravel-12.x-FF2D20?style=flat&logo=laravel)
+![Laravel Sanctum](https://img.shields.io/badge/Sanctum-Auth-FF2D20?style=flat&logo=laravel)
+![Redis](https://img.shields.io/badge/Redis-Cache-DC382D?style=flat&logo=redis)
+![MySQL](https://img.shields.io/badge/MySQL-8-4479A1?style=flat&logo=mysql)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat&logo=docker)
+![OpenAPI](https://img.shields.io/badge/OpenAPI-3.0-85EA2D?style=flat&logo=swagger)
 
 ## Features
-- Multi-locale translation support (en, fr, es, extensible)
-- Tag-based translation context (mobile, desktop, web)
-- CRUD and search APIs
-- JSON export endpoint for frontend apps (Vue.js / React)
-- Token-based authentication
-- High-performance optimized queries
-- Database seeding for 100k+ records
-- Docker support
-- Swagger / OpenAPI documentation
-- Unit, Feature, and Performance tests
 
----
-
-## Tech Stack
-- Laravel 10
-- PHP 8.1+
-- MySQL 8
-- Redis (cache)
-- Laravel Sanctum (API authentication)
-- Docker
-
----
-
-## Architecture
-The project follows SOLID principles:
-
-- **Controllers**: Thin, handle HTTP requests only
-- **Services**: Business logic
-- **Repositories**: Database query abstraction
-- **Models**: Eloquent ORM
-
-This separation ensures testability, scalability, and clean code.
-
----
+- **Translation CRUD** — create/update translations (key, content, locale)
+- **Locale Management** — pre-seeded: English (`en`), French (`fr`), Spanish (`es`)
+- **Tag System** — many-to-many tags per translation; synced on create/update
+- **Search** — filter by key (LIKE), locale code, tag name, content (MySQL full-text index); paginated 50/page
+- **Export** — `GET /api/translations/export/{locale}` returns `{ key: content }` JSON; Redis-cached 60s; cache invalidated on write
+- **Performance Test** — `TranslationPerformanceTest` asserts export < 500ms
+- **Repository Pattern** — `TranslationRepository` for queries; `TranslationService` for tag sync + cache
+- **Sanctum Auth** — all endpoints require `Authorization: Bearer {token}`
+- **Docker** — `docker-compose.yml` with `app`, `mysql:8`, `redis:alpine`
+- **OpenAPI** — full `openapi.yaml` spec included
 
 ## Database Schema
-- `locales` – Supported languages
-- `translations` – Translation key/value pairs
-- `tags` – Context tags
-- `translation_tag` – Pivot table (many-to-many)
 
-Indexes and FULLTEXT search are used to ensure fast queries.
+| Table | Key Columns | Purpose |
+|---|---|---|
+| `locales` | `id`, `code`, `name` | Supported languages |
+| `translations` | `id`, `key` (indexed), `locale_id`, `content` (full-text indexed) | Translation strings |
+| `tags` | `id`, `name` | Tag definitions |
+| `translation_tag` | `translation_id`, `tag_id` | Pivot table |
 
----
+## API Endpoints (all require Bearer token)
 
-## Performance Strategy
-- Indexed columns for filtering
-- FULLTEXT search for content
-- Redis caching for JSON export
-- Cache invalidation on create/update/delete
-- Optimized select queries
-- Pagination for large result sets
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/api/translations` | Create translation (key, content, locale_id, tags[]) |
+| `PUT` | `/api/translations/{id}` | Update translation |
+| `GET` | `/api/translations/{id}` | Get single translation |
+| `GET` | `/api/translations/search` | Search (key/locale/tag/content) |
+| `GET` | `/api/translations/export/{locale}` | Export flat JSON for locale (Redis-cached) |
 
-### Benchmarks
-- CRUD APIs: < 200ms
-- JSON Export (100k+ records): < 500ms
+## Getting Started
 
----
-
-## Authentication
-- Token-based authentication using Laravel Sanctum
-- Stateless API
-- All endpoints protected via `auth:sanctum`
-
----
-
-## Setup Instructions
-
-### 1. Clone Repository
 ```bash
-git clone <your-repo-url>
-cd translation-service
+# Docker
+cp .env.example .env && docker-compose up -d
+docker-compose exec app composer install
+docker-compose exec app php artisan migrate --seed
 
-## 2. Install Dependencies
-composer install
-
-##3. Environment Setup
-cp .env.example .env
-php artisan key:generate
-
-##4. Run Migrations
-php artisan migrate:fresh --seed
-
-
-##5. Seed Large Dataset (Optional)
-
-php artisan translations:seed 100000
-
-## 6. Run Application
-
+# Local
+composer install   # or: composer run setup (installs, migrates, builds)
+cp .env.example .env && php artisan key:generate
+php artisan migrate --seed   # seeds en/fr/es locales
 php artisan serve
 
-##API Documentation Swagger/OpenAPI specification is available in:
-openapi.yaml
+# Run tests
+php artisan test   # includes TranslationPerformanceTest
+```
 
-## Testing
-php artisan test
-
-## Docker Setup (Optional)
-docker-compose up -d
-
+## License
+MIT
