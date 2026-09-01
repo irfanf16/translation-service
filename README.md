@@ -24,16 +24,13 @@
 
 ## Architecture
 
-```
-app/
-  Http/Controllers/Api/TranslationController.php
-  Services/TranslationService.php      — create/update + cache invalidation
-  Repositories/TranslationRepository.php — search + read logic
-  Models/
-    Translation.php   — key, content, locale_id FK
-    Locale.php        — language code (en, fr, ar, ...)
-    Tag.php           — categorization tag
-    User.php
+```mermaid
+flowchart TD
+    C["TranslationController — API"] -- "validates, delegates writes" --> S["TranslationService<br/>create / update + cache invalidation"]
+    C -- "reads / search" --> R["TranslationRepository"]
+    S --> M["Models<br/>Translation · Locale · Tag"]
+    R --> M
+    M --> DB[("MySQL<br/>locales · translations · tags · translation_tag")]
 ```
 
 **Pattern:** Controller validates → Service handles business logic + cache invalidation → Repository handles reads/search.
